@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'weekly_stats_screen.dart';
+import 'gpt_plan_screen.dart';
 import 'settings_screen.dart';
 
 /// Root scaffold with a Material 3 bottom NavigationBar.
@@ -18,6 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
   // Keep all screens alive so state is preserved when switching tabs
   static const List<Widget> _screens = [
     HomeScreen(),
+    GptPlanScreen(),
     WeeklyStatsScreen(),
     SettingsScreen(),
   ];
@@ -42,6 +44,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Prospects',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Tracker',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),

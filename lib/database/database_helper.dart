@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 import '../models/prospect.dart';
 import '../models/event.dart';
 import '../models/custom_enum.dart';
+import '../models/weekly_plan.dart';
 
 /// Singleton class that manages the SQLite database.
 ///
@@ -29,7 +30,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3, // v2: created_at  v3: relationship
+      version: 4, // v2: created_at  v3: relationship  v4: weekly_plans
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -78,6 +79,20 @@ class DatabaseHelper {
       )
     ''');
 
+    // Weekly planner table
+    await db.execute('''
+      CREATE TABLE weekly_plans (
+        id TEXT PRIMARY KEY,
+        prospect_id TEXT NOT NULL,
+        week_start TEXT NOT NULL,
+        planned_action TEXT NOT NULL,
+        is_done INTEGER NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (prospect_id) REFERENCES prospects (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Seed default enum values
     await _seedDefaults(db);
   }
@@ -98,6 +113,21 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE prospects ADD COLUMN relationship TEXT',
       );
+    }
+    if (oldVersion < 4) {
+      // Add weekly planner table.
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS weekly_plans (
+          id TEXT PRIMARY KEY,
+          prospect_id TEXT NOT NULL,
+          week_start TEXT NOT NULL,
+          planned_action TEXT NOT NULL,
+          is_done INTEGER NOT NULL DEFAULT 0,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (prospect_id) REFERENCES prospects (id) ON DELETE CASCADE
+        )
+      ''');
     }
   }
 
@@ -199,6 +229,20 @@ class DatabaseHelper {
       orderBy: 'date_of_interaction DESC',
     );
     return maps.map((map) => ProspectEvent.fromMap(map)).toList();
+  }
+
+  /// Get the single most recent event for a prospect, or null if none exist.
+  Future<ProspectEvent?> getLatestEventForProspect(String prospectId) async {
+    final db = await database;
+    final maps = await db.query(
+      'events',
+      where: 'prospect_id = ?',
+      whereArgs: [prospectId],
+      orderBy: 'date_of_interaction DESC',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return ProspectEvent.fromMap(maps.first);
   }
 
   /// Update an existing event.
@@ -478,6 +522,71 @@ class DatabaseHelper {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final exportPath = join(exportDir, 'sales_tracker_backup_$timestamp.db');
     return await dbFile.copy(exportPath);
+  }
+
+  // ──────────────────────────────────────────────
+  // WEEKLY PLAN CRUD
+  // ──────────────────────────────────────────────
+
+  Future<void> insertWeeklyPlan(WeeklyPlan plan) async {
+    final db = await database;
+    await db.insert('weekly_plans', plan.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<WeeklyPlan>> getWeeklyPlans(DateTime weekStart) async {
+    final db = await database;
+    final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+    final maps = await db.query(
+      'weekly_plans',
+      where: 'week_start = ?',
+      whereArgs: [start.toIso8601String()],
+      orderBy: 'created_at ASC',
+    );
+    return maps.map(WeeklyPlan.fromMap).toList();
+  }
+
+  Future<void> updateWeeklyPlan(WeeklyPlan plan) async {
+    final db = await database;
+    await db.update('weekly_plans', plan.toMap(),
+        where: 'id = ?', whereArgs: [plan.id]);
+  }
+
+  Future<void> deleteWeeklyPlan(String id) async {
+    final db = await database;
+    await db.delete('weekly_plans', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Returns prospects whose latest nextEngagementDate falls within [weekStart, weekEnd].
+  Future<List<SuggestedPlan>> getSuggestedPlans(
+      DateTime weekStart, DateTime weekEnd) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT
+        p.id           AS prospect_id,
+        p.name         AS prospect_name,
+        p.relationship AS relationship,
+        e.next_plan_of_action AS planned_action,
+        e.next_engagement_date AS next_date
+      FROM events e
+      JOIN prospects p ON p.id = e.prospect_id
+      WHERE e.next_engagement_date >= ?
+        AND e.next_engagement_date <= ?
+      GROUP BY e.prospect_id
+      HAVING e.next_engagement_date = MAX(e.next_engagement_date)
+      ORDER BY e.next_engagement_date ASC
+    ''', [weekStart.toIso8601String(), weekEnd.toIso8601String()]);
+
+    return rows
+        .map((r) => SuggestedPlan(
+              prospectId: r['prospect_id'] as String,
+              prospectName: r['prospect_name'] as String,
+              relationship: r['relationship'] as String?,
+              plannedAction: r['planned_action'] as String,
+              nextEngagementDate:
+                  DateTime.parse(r['next_date'] as String),
+            ))
+        .toList();
   }
 
   /// Restore the database from an imported .db file.

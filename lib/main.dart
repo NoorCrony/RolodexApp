@@ -6,6 +6,7 @@ import 'providers/event_provider.dart';
 import 'providers/enum_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/weekly_plan_provider.dart';
 import 'screens/main_navigation.dart';
 import 'utils/seed_data.dart';
 
@@ -55,6 +56,7 @@ class SalesTrackerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProspectProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => EnumProvider()),
+        ChangeNotifierProvider(create: (_) => WeeklyPlanProvider()),
         ChangeNotifierProvider<ProfileProvider>.value(value: profileProvider),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
       ],
