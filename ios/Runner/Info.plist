@@ -4,6 +4,42 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+	<!-- Voice-to-text permissions -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Rolodex uses your microphone to let you dictate remarks and conversation notes hands-free.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Rolodex uses speech recognition to transcribe your spoken notes into text fields.</string>
+
+	<!-- ── Google Sign-In ──────────────────────────────────────────────────
+	     Replace YOUR_IOS_CLIENT_ID with the value from Google Cloud Console.
+	     It looks like: 123456789-abc123.apps.googleusercontent.com
+	     The URL scheme is the reversed client ID (swap dots to dashes).
+	──────────────────────────────────────────────────────────────────────── -->
+	<key>GIDClientID</key>
+	<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.YOUR_IOS_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- ── Background execution (Workmanager daily backup) ─────────────── -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>rolodex.dailyBackup</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -20,6 +20,11 @@ dependencies:
   uuid: ^4.2.1
   url_launcher: ^6.2.1
   shared_preferences: ^2.2.2
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  http: ^1.2.1
+  workmanager: ^0.5.2
+  speech_to_text: ^6.6.2
 
 dev_dependencies:
   flutter_test:

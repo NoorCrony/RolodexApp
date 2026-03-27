@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'weekly_stats_screen.dart';
 import 'settings_screen.dart';
-import 'backup_restore_screen.dart';
 
 /// Root scaffold with a Material 3 bottom NavigationBar.
 /// Each tab keeps its own navigation stack via an IndexedStack.
@@ -21,11 +20,13 @@ class _MainNavigationState extends State<MainNavigation> {
     HomeScreen(),
     WeeklyStatsScreen(),
     SettingsScreen(),
-    BackupRestoreScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    // Guard against a stale index (e.g. after a hot reload that reduced tab count)
+    if (_currentIndex >= _screens.length) _currentIndex = 0;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -48,14 +49,9 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Summary',
           ),
           NavigationDestination(
-            icon: Icon(Icons.tune_outlined),
-            selectedIcon: Icon(Icons.tune),
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
             label: 'Settings',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.cloud_outlined),
-            selectedIcon: Icon(Icons.cloud),
-            label: 'Backup',
           ),
         ],
       ),
