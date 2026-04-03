@@ -81,6 +81,22 @@ class SeedData {
     'Agreed on next steps and follow-up date.',
   ];
 
+  // ── Instagram handle samples ────────────────────────────────────────────
+  static const _igSuffixes = [
+    '', '.official', '_real', '._', '.life', '_pro', '.daily', '_page',
+  ];
+
+  static String _igHandle(String name) {
+    final clean = name.toLowerCase().replaceAll(' ', '.').replaceAll('-', '');
+    final suffix = _igSuffixes[_rng.nextInt(_igSuffixes.length)];
+    return 'https://instagram.com/$clean$suffix';
+  }
+
+  static String _liHandle(String name) {
+    final clean = name.toLowerCase().replaceAll(' ', '-').replaceAll("'", '');
+    return 'https://linkedin.com/in/$clean';
+  }
+
   /// Run the seeder. No-op if any seeded prospects already exist.
   static Future<void> run() async {
     final db = await DatabaseHelper.instance.database;
@@ -89,7 +105,12 @@ class SeedData {
     final check = await db.rawQuery(
       "SELECT COUNT(*) as c FROM prospects WHERE id LIKE 'P-SEED%'",
     );
-    if ((check.first['c'] as int) > 0) return;
+
+    if ((check.first['c'] as int) > 0) {
+      // Patch existing seeds that are missing social links
+      await _patchSocialLinks(db);
+      return;
+    }
 
     // Date range: Jan 1 2026 → Mar 31 2026
     final rangeStart = DateTime(2026, 1, 1);
@@ -101,16 +122,22 @@ class SeedData {
     for (int i = 0; i < 25; i++) {
       final createdAt =
           rangeStart.add(Duration(days: _rng.nextInt(rangeDays + 1)));
+      final name =
+          '${_firstNames[_rng.nextInt(_firstNames.length)]} ${_lastNames[_rng.nextInt(_lastNames.length)]}';
+      // ~80 % of seeds get Instagram, ~70 % get LinkedIn
+      final hasIg = _rng.nextDouble() < 0.8;
+      final hasLi = _rng.nextDouble() < 0.7;
       prospects.add(Prospect(
         id: 'P-SEED${i.toString().padLeft(4, '0')}',
-        name:
-            '${_firstNames[_rng.nextInt(_firstNames.length)]} ${_lastNames[_rng.nextInt(_lastNames.length)]}',
+        name: name,
         connectionType:
             _connectionTypes[_rng.nextInt(_connectionTypes.length)],
         place: _places[_rng.nextInt(_places.length)],
         currentStatus: _statuses[_rng.nextInt(_statuses.length)],
         relationship: _relationships[_rng.nextInt(_relationships.length)],
         contactNumber: '05${_rng.nextInt(90000000) + 10000000}',
+        instagramLink: hasIg ? _igHandle(name) : null,
+        linkedinLink:  hasLi ? _liHandle(name) : null,
         createdAt: createdAt,
       ));
     }
@@ -160,5 +187,31 @@ class SeedData {
         await txn.insert('events', e.toMap());
       }
     });
+  }
+
+  /// Patch existing seeded prospects that are missing social links.
+  static Future<void> _patchSocialLinks(dynamic db) async {
+    final rows = await db.rawQuery(
+      "SELECT id, name, instagram_link, linkedin_link FROM prospects WHERE id LIKE 'P-SEED%'",
+    );
+    for (final row in rows) {
+      final id   = row['id'] as String;
+      final name = row['name'] as String;
+      final noIg = row['instagram_link'] == null;
+      final noLi = row['linkedin_link'] == null;
+      if (!noIg && !noLi) continue; // already has links
+
+      final updates = <String, dynamic>{};
+      if (noIg && _rng.nextDouble() < 0.8) updates['instagram_link'] = _igHandle(name);
+      if (noLi && _rng.nextDouble() < 0.7) updates['linkedin_link']  = _liHandle(name);
+      if (updates.isEmpty) continue;
+
+      await db.update(
+        'prospects',
+        updates,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
   }
 }

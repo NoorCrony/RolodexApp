@@ -17,7 +17,7 @@
 	     The URL scheme is the reversed client ID (swap dots to dashes).
 	──────────────────────────────────────────────────────────────────────── -->
 	<key>GIDClientID</key>
-	<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string>
+	<string>93232700791-ss034j2j60r41v9799s69nvfhr5g8hkl.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -25,7 +25,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.YOUR_IOS_CLIENT_ID</string>
+				<string>com.googleusercontent.apps.93232700791-ss034j2j60r41v9799s69nvfhr5g8hkl</string>
 			</array>
 		</dict>
 	</array>

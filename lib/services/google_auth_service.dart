@@ -7,6 +7,7 @@ class GoogleAuthService {
   GoogleAuthService._();
 
   static final _instance = GoogleSignIn(
+    clientId: '93232700791-ss034j2j60r41v9799s69nvfhr5g8hkl.apps.googleusercontent.com',
     scopes: [
       'email',
       drive.DriveApi.driveFileScope,
